@@ -1,0 +1,69 @@
+﻿@page "/lobby"
+@using BattleshipBlazor.Models
+@using BattleshipBlazor.Services
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Nav
+@inject IGameService GameService
+@inject IHubConnectionService HubService
+
+@if (_hubConnection == null || _hubConnection.State != HubConnectionState.Connected)
+{
+    <div class="alert warning">Not connected. Go back and sign in.</div>
+    <button class="btn" @onclick="GoToLogin">Go to Login</button>
+}
+else
+{
+    <div class="parchment-card">
+        <h2>⚓ Admiralty Board</h2>
+        <div style="margin:10px;">
+            <button class="btn" @onclick="CreateGame">Create New Game</button>
+            <button class="btn" @onclick="Refresh">Refresh</button>
+        </div>
+
+        <h4>Open Engagements</h4>
+        @if (_games == null || !_games.Any())
+        {
+            <p>No games waiting for a captain.</p>
+        }
+        else
+        {
+            <table class="lobby-table">
+                <thead>
+                    <tr><th>Battle ID</th><th>Admiral</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var game in _games)
+                    {
+                        <tr>
+                            <td>@game.Id.Substring(0, 8)</td>
+                            <td>@game.Creator?.Name</td>
+                            <td><button class="btn small" @onclick="() => JoinGame(game.Id)">Join</button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+}
+
+@code {
+    HubConnection? _hubConnection;
+    List<GameSession>? _games;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hubConnection = HubService.Connection;
+        if (_hubConnection?.State == HubConnectionState.Connected)
+            await Refresh();
+    }
+
+    async Task Refresh()
+    {
+        _games = GameService.GetAvailableGames();
+        StateHasChanged();
+    }
+
+    void CreateGame() => Nav.NavigateTo("/gamesetup");
+    void JoinGame(string gameId) => Nav.NavigateTo($"/game/{gameId}");
+    void GoToLogin() => Nav.NavigateTo("/");
+}

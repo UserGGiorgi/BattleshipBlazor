@@ -1,0 +1,79 @@
+﻿@page "/"
+@using BattleshipBlazor.Services
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Nav
+@inject IUserService UserService
+@inject IHubConnectionService HubService
+
+<h1 class="text-center mt-5">Battleship</h1>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Enter your name</h5>
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <div class="alert alert-danger">@_errorMessage</div>
+                    }
+                    <div class="mb-3">
+                        <input @bind="_name" class="form-control" placeholder="Your name" />
+                    </div>
+                    <button class="btn btn-primary w-100" @onclick="EnterLobby" disabled="@_isLoading">
+                        @(_isLoading ? "Connecting..." : "Enter Lobby")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    string _name = "";
+    string? _errorMessage = null;
+    bool _isLoading = false;
+
+    async Task EnterLobby()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _errorMessage = "Please enter a name.";
+            return;
+        }
+
+        try
+        {
+            _isLoading = true;
+            _errorMessage = null;
+            StateHasChanged();
+
+            var hubConnection = new HubConnectionBuilder()
+                .WithUrl(Nav.ToAbsoluteUri("/gamehub"))
+                .WithAutomaticReconnect()
+                .Build();
+
+            hubConnection.On<BattleshipBlazor.Models.User>("UserRegistered", (user) =>
+            {
+                UserService.CurrentUser = user;
+                Console.WriteLine($"User registered as {user.Name}");
+            });
+
+            await hubConnection.StartAsync();
+
+            await hubConnection.InvokeAsync("RegisterUser", _name);
+
+            await Task.Delay(300);
+
+            HubService.Connection = hubConnection;
+
+            Nav.NavigateTo("/lobby");
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error: {ex.Message}";
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+}

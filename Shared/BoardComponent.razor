@@ -1,0 +1,42 @@
+﻿@using BattleshipBlazor.Models
+
+@if (Board == null || Board.Count == 0 || Board[0].Count == 0)
+{
+    <p class="text-muted">Board not ready</p>
+}
+else
+{
+    <div class="board">
+        @for (int r = 0; r < Board.Count; r++)
+        {
+            <div class="board-row">
+                @for (int c = 0; c < Board[r].Count; c++)
+                {
+                    int row = r, col = c;
+                    string cellClass = GetCellClass(row, col);
+                    <div class="cell @cellClass" @onclick="() => OnCellClick.InvokeAsync((row, col))"></div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public List<List<Cell>> Board { get; set; } = new();
+    [Parameter] public bool ShowShips { get; set; } = false;
+    [Parameter] public EventCallback<(int Row, int Col)> OnCellClick { get; set; }
+
+    string GetCellClass(int row, int col)
+    {
+        if (Board == null || row >= Board.Count || col >= Board[row].Count)
+            return "";
+        var cell = Board[row][col];
+        if (cell.IsSunk)
+            return "sunk";
+        if (cell.IsHit)
+            return cell.HasShip ? "hit" : "miss";
+        if (ShowShips && cell.HasShip)
+            return "ship";
+        return "";
+    }
+}

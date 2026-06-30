@@ -1,0 +1,73 @@
+﻿@page "/gamesetup"
+@using BattleshipBlazor.Services
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Nav
+@inject IHubConnectionService HubService
+
+<div class="parchment-card" style="max-width:450px; margin:40px auto;">
+    <h2>⚓ Commission a Ship</h2>
+
+    <div class="form-group">
+        <label style="display:block; margin-bottom:5px;">Grid Size</label>
+        <select @bind="_gridSize" class="form-select parchment-input">
+            <option value="8">8x8</option>
+            <option value="10" selected>10x10</option>
+            <option value="12">12x12</option>
+        </select>
+    </div>
+
+    <div class="form-group" style="margin-top:15px;">
+        <label style="display:block; margin-bottom:5px;">Ship Configuration</label>
+        <select @bind="_shipConfig" class="form-select parchment-input">
+            <option value="5,4,3,3,2">Standard (5,4,3,3,2)</option>
+            <option value="4,3,3,2,2,1">Variation</option>
+            <option value="4,4,3,3,2">Custom</option>
+        </select>
+    </div>
+
+    <div class="form-group form-check" style="margin-top:15px;">
+        <input type="checkbox" @bind="_isAI" class="form-check-input" id="aiCheck" />
+        <label class="form-check-label" for="aiCheck">Play against the Computer</label>
+    </div>
+
+    <div style="margin-top:25px;">
+        <button class="btn" @onclick="CreateGame">Create Game</button>
+        <button class="btn" @onclick="GoToLobby" style="background:var(--wood);">Cancel</button>
+    </div>
+</div>
+
+@code {
+    int _gridSize = 10;
+    string _shipConfig = "5,4,3,3,2";
+    bool _isAI = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var hub = HubService.Connection;
+        if (hub == null || hub.State != HubConnectionState.Connected)
+        {
+            Nav.NavigateTo("/");
+            return;
+        }
+
+        hub.On<string>("GameCreated", (gameId) =>
+        {
+            Nav.NavigateTo($"/game/{gameId}");
+        });
+        hub.On<string>("Error", (err) =>
+        {
+            Console.WriteLine($"Error: {err}");
+        });
+    }
+
+    async Task CreateGame()
+    {
+        var hub = HubService.Connection;
+        if (hub == null) return;
+
+        var shipLengths = _shipConfig.Split(',').Select(int.Parse).ToList();
+        await hub.InvokeAsync("CreateGame", _gridSize, shipLengths, _isAI);
+    }
+
+    void GoToLobby() => Nav.NavigateTo("/lobby");
+}

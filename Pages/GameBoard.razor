@@ -1,0 +1,183 @@
+﻿@page "/game/{gameId}"
+@using BattleshipBlazor.Models
+@using BattleshipBlazor.Services
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Nav
+@inject IUserService UserService
+@inject IHubConnectionService HubService
+@inject IGameService GameService
+
+@if (_isLoading)
+{
+    <div class="loading">⚓ Hoisting sails…</div>
+}
+else if (_loadingFailed)
+{
+    <div class="alert alert-danger">Failed to load game. Abandon ship!</div>
+    <button class="btn" @onclick="GoToLobby">Back to Lobby</button>
+}
+else if (_gameState == null)
+{
+    <div class="alert alert-warning">No game chart found.</div>
+}
+else if (_gameState.IsGameOver)
+{
+    <h2>🏴‍☠️ Game Over!</h2>
+    <p class="victory">Winner: <strong>@_gameState.Winner?.Name</strong></p>
+    <button class="btn" @onclick="GoToLobby">Back to Lobby</button>
+}
+else
+{
+    <div class="parchment-card">
+        <div class="game-header">
+            <span>📜 Battle @GameId.Substring(0, 8)</span>
+            <span>👤 @UserService.CurrentUser?.Name</span>
+        </div>
+        <div class="status-bar">
+            <span>Turn: <strong>@_gameState.CurrentPlayerName</strong></span>
+            <span>Phase: @(IsPlacementPhase ? "⚓ Positioning" : "💥 Cannons!")</span>
+            <span>Ships ready: @MyShipsCount / @_gameState.ShipLengths.Count</span>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_gameError))
+        {
+            <div class="alert alert-danger">@_gameError</div>
+        }
+
+        @if (IsPlacementPhase)
+        {
+            <h4>Place your fleet</h4>
+            <p>
+                Ship @(_currentShipIndex + 1): length @_gameState.ShipLengths[_currentShipIndex]
+                — <strong>@(_horizontal ? "Horizontal" : "Vertical")</strong>
+            </p>
+            <button class="btn toggle-orient" @onclick="ToggleOrientation">Toggle Orientation</button>
+            <button class="btn auto-place" @onclick="AutoPlace">Auto‑Place</button>
+            <br />
+
+            <br />
+            <BoardComponent Board="MyBoard" ShowShips="true" OnCellClick="PlaceShip" />
+        }
+        else
+        {
+            <div class="boards-container">
+                <div class="board-section">
+                    <h5>Your Fleet</h5>
+                    <BoardComponent Board="MyBoard" ShowShips="true" OnCellClick="() => { }" />
+                </div>
+                <div class="board-section">
+                    <h5>Enemy Waters</h5>
+                    <BoardComponent Board="OpponentBoard" ShowShips="false" OnCellClick="AttackCell" />
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string GameId { get; set; } = "";
+    GameSession? _gameState;
+    bool _horizontal = true;
+    int _currentShipIndex = 0;
+    bool _isLoading = true;
+    bool _loadingFailed = false;
+    string? _gameError = null;
+
+    bool IsPlacementPhase => _gameState != null &&
+        !_gameState.IsGameOver &&
+        (_gameState.Creator?.Name == UserService.CurrentUser?.Name && !_gameState.CreatorReady ||
+         _gameState.Opponent?.Name == UserService.CurrentUser?.Name && !_gameState.OpponentReady);
+
+    int MyShipsCount => _gameState == null || UserService.CurrentUser == null ? 0 :
+        (_gameState.Creator?.Name == UserService.CurrentUser.Name ? _gameState.CreatorShips.Count : _gameState.OpponentShips.Count);
+
+    List<List<Cell>> MyBoard => _gameState == null || UserService.CurrentUser == null
+        ? new()
+        : (_gameState.Creator?.Name == UserService.CurrentUser.Name ? _gameState.BoardCreator : _gameState.BoardOpponent);
+
+    List<List<Cell>> OpponentBoard => _gameState == null ? new() :
+        (_gameState.Creator?.Name == UserService.CurrentUser?.Name ? _gameState.BoardOpponent : _gameState.BoardCreator);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UserService.CurrentUser == null) { Nav.NavigateTo("/"); return; }
+        var hub = HubService.Connection;
+        if (hub == null || hub.State != HubConnectionState.Connected) { Nav.NavigateTo("/"); return; }
+
+        hub.On<GameSession>("GameStateUpdated", (state) =>
+        {
+            InvokeAsync(() =>
+            {
+                _gameState = state;
+                _gameError = null;
+                if (_gameState != null && UserService.CurrentUser != null)
+                {
+                    var myShips = _gameState.Creator?.Name == UserService.CurrentUser.Name
+                        ? _gameState.CreatorShips : _gameState.OpponentShips;
+                    _currentShipIndex = myShips?.Count ?? 0;
+                }
+                _isLoading = false;
+                StateHasChanged();
+            });
+        });
+        hub.On<GameSession>("GameOver", (state) => { InvokeAsync(() => { _gameState = state; _isLoading = false; StateHasChanged(); }); });
+        hub.On<string>("Error", (err) =>
+        {
+            InvokeAsync(() =>
+            {
+                if (_gameState == null) { _loadingFailed = true; _isLoading = false; }
+                else { _gameError = err; }
+                StateHasChanged();
+            });
+        });
+
+        await hub.InvokeAsync("JoinGame", GameId);
+        await Task.Delay(600);
+        if (_gameState == null)
+        {
+            var game = GameService.GetGame(GameId);
+            if (game != null) { _gameState = game; _isLoading = false; }
+            else { _loadingFailed = true; _isLoading = false; }
+        }
+        else { _isLoading = false; }
+        StateHasChanged();
+    }
+
+    async Task PlaceShip((int Row, int Col) coord)
+    {
+        if (_gameState == null || !IsPlacementPhase) return;
+        var hub = HubService.Connection;
+        if (hub == null) return;
+        await hub.InvokeAsync("PlaceShip", GameId, _currentShipIndex, coord.Row, coord.Col, _horizontal);
+    }
+
+    async Task AutoPlace()
+    {
+        var hub = HubService.Connection;
+        if (hub == null) return;
+        await hub.InvokeAsync("AutoPlaceShips", GameId);
+    }
+
+    void ToggleOrientation()
+    {
+        _horizontal = !_horizontal;
+    }
+
+    async Task AttackCell((int Row, int Col) coord)
+    {
+        if (_gameState == null || _gameState.IsGameOver) return;
+        if (_gameState.CurrentTurn?.Name != UserService.CurrentUser?.Name) return;
+
+        var hub = HubService.Connection;
+        if (hub == null) return;
+        await hub.InvokeAsync("MakeMove", GameId, coord.Row, coord.Col);
+
+        if (_gameState.IsAgainstAI && !_gameState.IsGameOver)
+        {
+            await Task.Delay(1000);
+            await hub.InvokeAsync("RequestAIMove", GameId);
+        }
+    }
+
+    void GoToLobby() => Nav.NavigateTo("/lobby");
+}

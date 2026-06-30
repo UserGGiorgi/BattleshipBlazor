@@ -1,0 +1,306 @@
+﻿@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
+
+:root {
+    --bg-dark: #1B252E;
+    --bg-map: #E9DFC8;
+    --bg-panel: #D6C6A5;
+    --water-deep: #1F5E73;
+    --water: #3E8FA8;
+    --water-light: #6FB6C7;
+    --sky: #82B9D9;
+    --sky-light: #BFDDEA;
+    --sand: #D8BE8B;
+    --sand-light: #E8D5A7;
+    --wood-dark: #4F3422;
+    --wood: #6F4A2D;
+    --wood-light: #8C6545;
+    --red-dark: #6E2D2A;
+    --red: #8C3E3A;
+    --red-light: #A7554B;
+    --metal-dark: #3A3A39;
+    --metal: #61615D;
+    --metal-light: #878680;
+    --fire-dark: #8A2E12;
+    --fire: #C65A1E;
+    --fire-bright: #E79C2A;
+    --smoke: #55504A;
+    --palm: #547344;
+    --jungle: #355A38;
+    --text: #F4EBD4;
+    --text-dark: #3C2E20;
+    --gold: #C59B43;
+    --shadow: rgba(20,15,10,0.45);
+}
+
+html, body {
+    font-family: 'Georgia', serif;
+    background: linear-gradient(135deg, var(--bg-dark) 0%, #163545 100%);
+    color: var(--text);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+a, .btn-link {
+    color: var(--gold);
+}
+
+    a:hover {
+        color: var(--fire-bright);
+    }
+
+.btn, .btn-primary, .btn-success, .btn-info, .btn-warning, .btn-sm {
+    display: inline-block;
+    background: var(--red);
+    color: var(--text);
+    border: 3px solid var(--wood-dark);
+    border-radius: 6px;
+    box-shadow: 3px 3px 0 var(--shadow);
+    font-family: 'Georgia', serif;
+    padding: 10px 20px;
+    margin: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+    .btn:hover, .btn-primary:hover, .btn-success:hover, .btn-info:hover, .btn-warning:hover, .btn-sm:hover {
+        background: var(--red-light);
+        border-color: var(--wood);
+        box-shadow: 5px 5px 0 var(--shadow);
+        transform: translateY(-1px);
+    }
+
+    .btn.small {
+        padding: 6px 14px;
+        font-size: 0.85rem;
+    }
+
+    /* Differentiate "Auto‑Place" and "Toggle" with gold accents */
+    .btn.auto-place {
+        background: var(--gold);
+        border-color: var(--wood-dark);
+        color: var(--bg-dark);
+    }
+
+    .btn.toggle-orient {
+        background: var(--wood);
+        color: var(--text);
+    }
+
+    .btn-primary:hover, .btn-success:hover, .btn-info:hover, .btn-warning:hover, .btn-sm:hover {
+        background: var(--red-light);
+        border-color: var(--wood);
+    }
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.card {
+    background: var(--bg-panel);
+    border: 4px solid var(--wood-dark);
+    box-shadow: 5px 5px 0 var(--shadow);
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 500px;
+    color: var(--text-dark);
+}
+
+.alert-danger {
+    background-color: var(--red-dark);
+    color: var(--text);
+    border: 2px solid var(--fire);
+}
+
+.alert-warning {
+    background-color: var(--sand);
+    color: var(--text-dark);
+    border: 2px solid var(--gold);
+}
+
+/* Board */
+.board {
+    display: inline-block;
+    border: 5px solid var(--wood-dark);
+    border-radius: 4px;
+    box-shadow: 8px 8px 0 var(--shadow);
+    background: var(--bg-map);
+}
+
+.board-row {
+    display: flex;
+}
+
+.cell {
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--wood-light);
+    background-color: var(--sky-light);
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: 0.1s;
+}
+
+    .cell.ship {
+        background-color: var(--wood) !important; /* hidden ships look like wood */
+    }
+
+    .cell.hit {
+        background: radial-gradient(circle, var(--fire-bright), var(--fire), var(--fire-dark));
+        background-size: cover;
+    }
+
+    .cell.miss {
+        background-color: var(--water) !important;
+    }
+
+    /* Sunk ship – explosion effect */
+    .cell.sunk {
+        background: radial-gradient(circle at 30% 30%, #FFF5B5, var(--fire-bright) 30%, var(--fire) 60%, var(--smoke) 100%);
+        animation: explode 0.3s ease-out;
+        border-color: var(--fire-dark);
+    }
+
+@keyframes explode {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Game page layout */
+.game-container {
+    text-align: center;
+    padding: 20px;
+}
+
+.boards-wrapper {
+    display: flex;
+    justify-content: center;
+    gap: 50px;
+    flex-wrap: wrap;
+}
+
+/* Header */
+header {
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 100"><rect width="1200" height="100" fill="%234F3422"/><path d="M0 70 Q200 10 400 70 T800 70 T1200 70 L1200 100 L0 100 Z" fill="%23D8BE8B"/></svg>') bottom repeat-x;
+    background-size: cover;
+    padding: 20px;
+    text-align: center;
+    border-bottom: 4px solid var(--wood);
+}
+
+    header h1 {
+        font-family: 'Georgia', serif;
+        font-size: 3rem;
+        color: var(--gold);
+        text-shadow: 3px 3px 0 var(--shadow);
+        margin: 0;
+    }
+
+    header nav {
+        margin-top: 10px;
+    }
+
+        header nav a {
+            color: var(--text);
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 1.2rem;
+            border-bottom: 2px solid transparent;
+        }
+
+            header nav a:hover {
+                border-bottom: 2px solid var(--gold);
+            }
+
+.parchment-card {
+    background: var(--bg-panel);
+    border: 4px solid var(--wood-dark);
+    box-shadow: 5px 5px 0 var(--shadow);
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 900px;
+    color: var(--text-dark);
+    text-align: center;
+}
+
+.game-header, .status-bar {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+    background: var(--sand-light);
+    padding: 6px 12px;
+    border: 2px solid var(--wood);
+    border-radius: 4px;
+}
+
+.boards-container {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.lobby-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    color: var(--text-dark);
+}
+
+    .lobby-table th, .lobby-table td {
+        border: 2px solid var(--wood);
+        padding: 8px;
+        background: var(--sand-light);
+    }
+
+    .lobby-table th {
+        background: var(--wood);
+        color: var(--text);
+    }
+
+.loading {
+    font-size: 2rem;
+    text-align: center;
+    margin-top: 100px;
+    color: var(--gold);
+}
+
+.victory {
+    font-size: 1.5rem;
+    color: var(--gold);
+}
+
+.btn.small {
+    padding: 3px 10px;
+    font-size: 0.9rem;
+}
+#blazor-error-ui {
+    display: none !important;
+}
+.parchment-input, .form-select {
+    background: var(--sand-light);
+    border: 2px solid var(--wood);
+    color: var(--text-dark);
+    padding: 8px;
+    border-radius: 4px;
+    width: 100%;
+    font-family: 'Georgia', serif;
+}
