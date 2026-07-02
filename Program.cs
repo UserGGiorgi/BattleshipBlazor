@@ -1,5 +1,6 @@
 using BattleshipBlazor.Hubs;
 using BattleshipBlazor.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,10 +20,16 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+     app.UseHttpsRedirection();
+}
 app.UseStaticFiles();
 app.UseRouting();
-
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 app.MapBlazorHub();
 app.MapHub<GameHub>("/gamehub");
 app.MapFallbackToPage("/_Host");

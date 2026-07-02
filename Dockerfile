@@ -10,7 +10,7 @@ WORKDIR /app
 COPY --from=build /app .
 
 # Listen on the port Render assigns (default 10000)
-ENV ASPNETCORE_URLS=http://+:${PORT:-80}
+ENV ASPNETCORE_URLS=http://+:80
 EXPOSE 80
 
 ENTRYPOINT ["dotnet", "BattleshipBlazor.dll"]
