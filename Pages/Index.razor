@@ -50,7 +50,7 @@
             StateHasChanged();
 
             var hubConnection = new HubConnectionBuilder()
-                .WithUrl(Nav.ToAbsoluteUri("/gamehub"))
+                .WithUrl("http://localhost:80/gamehub") 
                 .WithAutomaticReconnect()
                 .Build();
 
