@@ -5,6 +5,7 @@
 @inject NavigationManager Nav
 @inject IUserService UserService
 @inject IHubConnectionService HubService
+@inject IConfiguration Configuration
 
 <h1 class="text-center mt-5">Battleship</h1>
 
@@ -43,14 +44,23 @@
             return;
         }
 
+        _isLoading = true;
+        _errorMessage = null;
+        StateHasChanged();
+
         try
         {
-            _isLoading = true;
-            _errorMessage = null;
-            StateHasChanged();
+            // Read the hub URL from configuration (set locally in appsettings.Development.json,
+            // overridden on Render by the environment variable HubUrl)
+            var hubUrl = Configuration["HubUrl"];
+            if (string.IsNullOrEmpty(hubUrl))
+            {
+                // Fallback (should not happen)
+                hubUrl = Nav.ToAbsoluteUri("/gamehub").ToString();
+            }
 
             var hubConnection = new HubConnectionBuilder()
-                .WithUrl("http://localhost:80/gamehub") 
+                .WithUrl(hubUrl)
                 .WithAutomaticReconnect()
                 .Build();
 
@@ -60,6 +70,7 @@
             });
 
             await hubConnection.StartAsync();
+
             for (int i = 0; i < 20; i++)
             {
                 if (hubConnection.State == HubConnectionState.Connected)
@@ -69,7 +80,7 @@
 
             if (hubConnection.State != HubConnectionState.Connected)
             {
-                _errorMessage = "Could not connect to server. Please try again.";
+                _errorMessage = "Could not connect to the game server. Please refresh and try again.";
                 _isLoading = false;
                 StateHasChanged();
                 return;
@@ -79,7 +90,6 @@
             await Task.Delay(500);
 
             HubService.Connection = hubConnection;
-
             Nav.NavigateTo("/lobby");
         }
         catch (Exception ex)
