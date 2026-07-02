@@ -13,6 +13,10 @@ builder.Services.AddSingleton<IGameService, GameService>();
 builder.Services.AddScoped<IHubConnectionService, HubConnectionService>();
 
 var app = builder.Build();
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 if (!app.Environment.IsDevelopment())
 {
@@ -20,16 +24,10 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-if (!app.Environment.IsDevelopment())
-{
-     app.UseHttpsRedirection();
-}
+
 app.UseStaticFiles();
 app.UseRouting();
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
+
 app.MapBlazorHub();
 app.MapHub<GameHub>("/gamehub");
 app.MapFallbackToPage("/_Host");
