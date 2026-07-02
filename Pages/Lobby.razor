@@ -8,8 +8,11 @@
 
 @if (_hubConnection == null || _hubConnection.State != HubConnectionState.Connected)
 {
-    <div class="alert warning">Not connected. Go back and sign in.</div>
-    <button class="btn" @onclick="GoToLogin">Go to Login</button>
+    <div class="alert alert-warning">
+        Connection lost or not established.
+        <button class="btn" @onclick="RetryConnection">Retry</button>
+        <button class="btn" @onclick="GoToLogin">Go to Login</button>
+    </div>
 }
 else
 {
@@ -53,8 +56,16 @@ else
     protected override async Task OnInitializedAsync()
     {
         _hubConnection = HubService.Connection;
+        for (int i = 0; i < 10; i++)
+        {
+            if (_hubConnection?.State == HubConnectionState.Connected)
+                break;
+            await Task.Delay(300);
+        }
         if (_hubConnection?.State == HubConnectionState.Connected)
             await Refresh();
+        else
+            StateHasChanged();
     }
 
     async Task Refresh()
@@ -64,6 +75,19 @@ else
     }
 
     void CreateGame() => Nav.NavigateTo("/gamesetup");
-    void JoinGame(string gameId) => Nav.NavigateTo($"/game/{gameId}");
+
+    async Task JoinGame(string gameId)
+    {
+        if (_hubConnection?.State == HubConnectionState.Connected)
+        {
+            Nav.NavigateTo($"/game/{gameId}");
+        }
+    }
+
+    void RetryConnection()
+    {
+        Nav.NavigateTo("/", forceLoad: true);
+    }
+
     void GoToLogin() => Nav.NavigateTo("/");
 }
