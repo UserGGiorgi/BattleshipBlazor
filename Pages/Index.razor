@@ -43,22 +43,12 @@
             _errorMessage = "Please enter a name.";
             return;
         }
-
         _isLoading = true;
         _errorMessage = null;
         StateHasChanged();
-
         try
         {
-            // Read the hub URL from configuration (set locally in appsettings.Development.json,
-            // overridden on Render by the environment variable HubUrl)
-            var hubUrl = Configuration["HubUrl"];
-            if (string.IsNullOrEmpty(hubUrl))
-            {
-                // Fallback (should not happen)
-                hubUrl = Nav.ToAbsoluteUri("/gamehub").ToString();
-            }
-
+            var hubUrl = Nav.ToAbsoluteUri("/gamehub").ToString();
             var hubConnection = new HubConnectionBuilder()
                 .WithUrl(hubUrl)
                 .WithAutomaticReconnect()
