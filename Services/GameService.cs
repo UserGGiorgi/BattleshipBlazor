@@ -13,11 +13,17 @@ namespace BattleshipBlazor.Services
 
         public GameService()
         {
-            string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            string appFolder = Path.Combine(appData, "BattleshipBlazor");
-            Directory.CreateDirectory(appFolder);
-            _statsFilePath = Path.Combine(appFolder, "stats.json");
-            try { LoadStats(); } catch { /* ignore */ }
+            try
+            {
+                string appFolder = Path.Combine(Path.GetTempPath(), "BattleshipBlazor");
+                Directory.CreateDirectory(appFolder);
+                _statsFilePath = Path.Combine(appFolder, "stats.json");
+                LoadStats();
+            }
+            catch
+            {
+                _statsFilePath = Path.Combine(AppContext.BaseDirectory, "stats.json");
+            }
         }
 
         public User RegisterUser(string name, string connectionId)
