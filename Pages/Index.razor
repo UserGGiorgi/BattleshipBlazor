@@ -59,32 +59,29 @@
                 UserService.CurrentUser = user;
             });
 
-            await hubConnection.StartAsync();
-
-            for (int i = 0; i < 20; i++)
+            hubConnection.Closed += (error) =>
             {
-                if (hubConnection.State == HubConnectionState.Connected)
-                    break;
-                await Task.Delay(250);
-            }
+                Console.WriteLine($"Hub connection closed: {error?.Message}");
+                return Task.CompletedTask;
+            };
+
+            await hubConnection.StartAsync();
 
             if (hubConnection.State != HubConnectionState.Connected)
             {
-                _errorMessage = "Could not connect to the game server. Please refresh and try again.";
+                _errorMessage = $"Connection not active after start (state: {hubConnection.State}).";
                 _isLoading = false;
                 StateHasChanged();
                 return;
             }
 
             await hubConnection.InvokeAsync("RegisterUser", _name);
-            await Task.Delay(500);
-
             HubService.Connection = hubConnection;
             Nav.NavigateTo("/lobby");
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Error: {ex.Message}";
+            _errorMessage = $"Error: {ex.GetType().Name}: {ex.Message}";
             _isLoading = false;
             StateHasChanged();
         }
